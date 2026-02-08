@@ -1,0 +1,126 @@
+#! /usr/bin/env python3
+
+import csv
+import argparse
+import curses
+from pathlib import Path
+from dotenv import load_dotenv
+import os
+import getpass
+import requests
+
+help_msg = """
+"""
+parser = argparse.ArgumentParser(add_help=False)
+
+args = parser.parse_args()
+
+
+colors = {
+    "green": curses.COLOR_GREEN,
+    "red": curses.COLOR_RED,
+    "blue": curses.COLOR_BLUE,
+    "white": curses.COLOR_WHITE,
+    "yellow": curses.COLOR_YELLOW,
+    "cyan": curses.COLOR_CYAN,
+    "magenta": curses.COLOR_MAGENTA,
+    "black": curses.COLOR_BLACK,
+    "default": -1,
+}
+
+
+class Dashboard:
+    """
+    Dashboard for viewing progress
+    """
+
+    HEADER = [
+        "░███     ░███                                       ░██",
+        "░████   ░████",
+        "░██░██ ░██░██  ░███████  ░█████████████   ░███████  ░██░█████████  ░███████",
+        "░██ ░████ ░██ ░██    ░██ ░██   ░██   ░██ ░██    ░██ ░██     ░███  ░██    ░██",
+        "░██  ░██  ░██ ░█████████ ░██   ░██   ░██ ░██    ░██ ░██   ░███    ░█████████",
+        "░██       ░██ ░██        ░██   ░██   ░██ ░██    ░██ ░██ ░███      ░██       ",
+        "░██       ░██  ░███████  ░██   ░██   ░██  ░███████  ░██░█████████  ░███████",
+    ]
+
+    def __init__(self, stdscr):
+        self.screen = stdscr
+        curses.start_color()
+        curses.init_pair(1, colors["cyan"], colors["black"])
+        self.draw()
+        self.screen.getch()
+
+    def draw(self):
+        self.screen.clear()
+        curses.curs_set(0)
+        h, w = self.screen.getmaxyx()
+        # art_height = len(self.HEADER)
+        art_width = max(len(line) for line in self.HEADER)
+        # start_y = (h // 2) - (art_height // 2)
+        start_x = (w // 2) - (art_width // 2)
+        for i, line in enumerate(self.HEADER):
+            try:
+                self.screen.addstr(
+                    1 + i, start_x, line, curses.color_pair(1) | curses.A_BOLD
+                )
+            except curses.error:
+                pass
+        self.screen.refresh()
+
+
+class Notes:
+    """
+    Adding notes to LeetCode questions
+    """
+
+    def __init__(self):
+        self.id = None
+        self.title = None
+        self.LEETCODE_SESSION = None
+        self.csrftoken = None
+        self.url = None
+        self.notes = None
+
+    def init_env(self):
+        env_file = Path("./.env")
+        if env_file.exists():
+            load_dotenv()
+            self.LEETCODE_SESSION = os.getenv("LEETCODE_SESSION")
+            self.csrftoken = os.getenv("csrftoken")
+        else:
+            file = Path(".env")
+            session = getpass.getpass("Enter LEETCODE_SESSION:\n")
+            token = getpass.getpass("Enter csrftoken:\n")
+            with open(file, "w") as f:
+                f.write(f'LEETCODE_SESSION="{session}"\n')
+                f.write(f'csrftoken="{token}"\n')
+            self.LEETCODE_SESSION = session
+            self.csrftoken = token
+
+    def get_recent_ac(self):
+        payload = {
+            "query": "query recentAcSubmissions($username: String!, $limit: Int!) { recentAcSubmissionList(username: $username, limit: $limit) { id title titleSlug } }",
+            "variables": {"username": USERNAME, "limit": 1},
+        }
+        url = "https://leetcode.com/graphql"
+        cookie = {
+            "LEETCODE_SESSION": self.LEETCODE_SESSION,
+            "csrftoken": self.csrftoken,
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Referer": "https://leetcode.com",
+            "X-CSRFToken": self.csrftoken,
+        }
+        response = requests.post(url, cookies=cookie, headers=headers, json=payload)
+        self.id = response.json()["data"]["recentAcSubmissionList"][0]["id"]
+        self.title = response.json()["data"]["recentAcSubmissionList"][0]["title"]
+        self.url = f"https://leetcode.com/{response.json()['data']['recentAcSubmissionList'][0]['titleSlug']}"
+        self.notes = input(f"Enter Notes for the question: {self.title}\n")
+
+
+if __name__ == "__main__":
+    USERNAME = "loowtide"
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(current_dir, "leetnotes.csv")
