@@ -8,12 +8,25 @@ from dotenv import load_dotenv
 import os
 import getpass
 import requests
+from datetime import datetime
+from random import random
 
 help_msg = """
 """
 parser = argparse.ArgumentParser(add_help=False)
 
 args = parser.parse_args()
+
+
+class Color:
+    PURPLE = "\033[95m"
+    CYAN = "\033[96m"
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    BOLD = "\033[1m"
+    END = "\033[0m"
 
 
 colors = {
@@ -41,13 +54,13 @@ class Dashboard:
         "░██ ░████ ░██ ░██    ░██ ░██   ░██   ░██ ░██    ░██ ░██     ░███  ░██    ░██",
         "░██  ░██  ░██ ░█████████ ░██   ░██   ░██ ░██    ░██ ░██   ░███    ░█████████",
         "░██       ░██ ░██        ░██   ░██   ░██ ░██    ░██ ░██ ░███      ░██       ",
-        "░██       ░██  ░███████  ░██   ░██   ░██  ░███████  ░██░█████████  ░███████",
+        "░██       ░██  ░███████  ░██   ░██   ░██  ░███████  ░██░█████████  ░███████ v1.0",
     ]
 
     def __init__(self, stdscr):
         self.screen = stdscr
         curses.start_color()
-        curses.init_pair(1, colors["cyan"], colors["black"])
+        curses.init_pair(1, colors["red"], colors["black"])
         self.draw()
         self.screen.getch()
 
@@ -69,58 +82,129 @@ class Dashboard:
         self.screen.refresh()
 
 
+class Reminder:
+    """
+    Remind each day for a daily question
+    """
+
+    def __init__(self):
+        pass
+
+
 class Notes:
     """
     Adding notes to LeetCode questions
     """
 
+    @property
+    def username(self):
+        return Setup.USERNAME
+
     def __init__(self):
         self.id = None
         self.title = None
-        self.LEETCODE_SESSION = None
-        self.csrftoken = None
         self.url = None
         self.notes = None
+        self.priority = None
+        self.revised = None
+        self.init_env()
 
     def init_env(self):
-        env_file = Path("./.env")
-        if env_file.exists():
-            load_dotenv()
+        self.LEETCODE_SESSION = Setup.LEETCODE_SESSION
+        self.csrftoken = Setup.csrftoken
+        env_path = Path(__file__).resolve().parent / ".env"
+        if env_path.exists():
+            load_dotenv(dotenv_path=env_path)
             self.LEETCODE_SESSION = os.getenv("LEETCODE_SESSION")
             self.csrftoken = os.getenv("csrftoken")
         else:
-            file = Path(".env")
-            session = getpass.getpass("Enter LEETCODE_SESSION:\n")
-            token = getpass.getpass("Enter csrftoken:\n")
-            with open(file, "w") as f:
+            session = getpass.getpass(
+                f"{Color.BOLD}{Color.GREEN}Enter LEETCODE_SESSION:{Color.END}\n"
+            )
+            token = getpass.getpass(
+                f"{Color.BOLD}{Color.GREEN}Enter csrftoken:{Color.END}\n"
+            )
+            with open(env_path, "w") as f:
                 f.write(f'LEETCODE_SESSION="{session}"\n')
                 f.write(f'csrftoken="{token}"\n')
             self.LEETCODE_SESSION = session
             self.csrftoken = token
 
     def get_recent_ac(self):
-        payload = {
-            "query": "query recentAcSubmissions($username: String!, $limit: Int!) { recentAcSubmissionList(username: $username, limit: $limit) { id title titleSlug } }",
-            "variables": {"username": USERNAME, "limit": 1},
-        }
-        url = "https://leetcode.com/graphql"
-        cookie = {
-            "LEETCODE_SESSION": self.LEETCODE_SESSION,
-            "csrftoken": self.csrftoken,
-        }
-        headers = {
-            "Content-Type": "application/json",
-            "Referer": "https://leetcode.com",
-            "X-CSRFToken": self.csrftoken,
-        }
-        response = requests.post(url, cookies=cookie, headers=headers, json=payload)
-        self.id = response.json()["data"]["recentAcSubmissionList"][0]["id"]
-        self.title = response.json()["data"]["recentAcSubmissionList"][0]["title"]
-        self.url = f"https://leetcode.com/{response.json()['data']['recentAcSubmissionList'][0]['titleSlug']}"
-        self.notes = input(f"Enter Notes for the question: {self.title}\n")
+        try:
+            payload = {
+                "query": "query recentAcSubmissions($username: String!, $limit: Int!) { recentAcSubmissionList(username: $username, limit: $limit) { id title titleSlug timestamp } }",
+                "variables": {"username": self.username, "limit": 1},
+            }
+            url = "https://leetcode.com/graphql"
+            cookie = {
+                "LEETCODE_SESSION": self.LEETCODE_SESSION,
+                "csrftoken": self.csrftoken,
+            }
+            headers = {
+                "Content-Type": "application/json",
+                "Referer": "https://leetcode.com",
+                "X-CSRFToken": self.csrftoken,
+            }
+            response = requests.post(url, cookies=cookie, headers=headers, json=payload)
+
+            self.id = response.json()["data"]["recentAcSubmissionList"][0]["id"]
+            self.title = response.json()["data"]["recentAcSubmissionList"][0]["title"]
+            self.url = f"https://leetcode.com/{response.json()['data']['recentAcSubmissionList'][0]['titleSlug']}"
+            self.notes = input(
+                f"{Color.BOLD}{Color.BLUE}Enter Notes for the question: {Color.END}{Color.BOLD}{Color.RED}{self.title}{Color.END}\n"
+            )
+            timestamp = response.json()["data"]["recentAcSubmissionList"][0][
+                "timestamp"
+            ]
+            print(datetime.fromtimestamp(int(timestamp)).strftime("%c"))
+        except Exception as e:
+            print(f"{Color.RED}unexpected error occured: {e} {Color.END}")
+
+
+class Setup:
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_path = Path(os.path.join(base_dir, "leetnotes.csv"))
+    headers = ["ID", "Title", "Link", "Notes", "Priority", "Revised"]
+
+    USERNAME = None
+    LEETCODE_SESSION = None
+    csrftoken = None
+
+    @classmethod
+    def create_header(cls):
+        if not cls.csv_path.exists():
+            with open(cls.csv_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(cls.headers)
+                return True
+        return False
+
+    @classmethod
+    def get_username(cls):
+        if not cls.USERNAME:
+            cls.USERNAME = input("Enter username:\n")
+
+    @classmethod
+    def init_env(cls):
+        env_path = Path(__file__).resolve().parent / ".env"
+        if env_path.exists():
+            load_dotenv(dotenv_path=env_path)
+            cls.LEETCODE_SESSION = os.getenv("LEETCODE_SESSION")
+            cls.csrftoken = os.getenv("csrftoken")
+        else:
+            session = getpass.getpass(
+                f"{Color.BOLD}{Color.GREEN}Enter LEETCODE_SESSION:{Color.END}\n"
+            )
+            token = getpass.getpass(
+                f"{Color.BOLD}{Color.GREEN}Enter csrftoken:{Color.END}\n"
+            )
+            with open(env_path, "w") as f:
+                f.write(f'LEETCODE_SESSION="{session}"\n')
+                f.write(f'csrftoken="{token}"\n')
+            cls.LEETCODE_SESSION = session
+            cls.csrftoken = token
 
 
 if __name__ == "__main__":
-    USERNAME = "loowtide"
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_dir, "leetnotes.csv")
+    pass
