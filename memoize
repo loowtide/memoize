@@ -1,13 +1,16 @@
 #! /usr/bin/env python3
 
+import time
+from rich.panel import Panel
+from rich.console import Console
 import csv
 import argparse
-import curses
 from pathlib import Path
 from dotenv import load_dotenv
 import os
 import getpass
 import requests
+from rich.text import Text
 from datetime import datetime
 from random import random
 
@@ -29,62 +32,35 @@ class Color:
     END = "\033[0m"
 
 
-colors = {
-    "green": curses.COLOR_GREEN,
-    "red": curses.COLOR_RED,
-    "blue": curses.COLOR_BLUE,
-    "white": curses.COLOR_WHITE,
-    "yellow": curses.COLOR_YELLOW,
-    "cyan": curses.COLOR_CYAN,
-    "magenta": curses.COLOR_MAGENTA,
-    "black": curses.COLOR_BLACK,
-    "default": -1,
-}
-
-
 class Dashboard:
     """
     Dashboard for viewing progress
     """
 
-    HEADER = [
-        "░███     ░███                                       ░██",
-        "░████   ░████",
-        "░██░██ ░██░██  ░███████  ░█████████████   ░███████  ░██░█████████  ░███████",
-        "░██ ░████ ░██ ░██    ░██ ░██   ░██   ░██ ░██    ░██ ░██     ░███  ░██    ░██",
-        "░██  ░██  ░██ ░█████████ ░██   ░██   ░██ ░██    ░██ ░██   ░███    ░█████████",
-        "░██       ░██ ░██        ░██   ░██   ░██ ░██    ░██ ░██ ░███      ░██       ",
-        "░██       ░██  ░███████  ░██   ░██   ░██  ░███████  ░██░█████████  ░███████ v1.0",
-    ]
+    HEADER = """
+▗▖  ▗▖▗▄▄▄▖▗▖  ▗▖ ▗▄▖ ▗▄▄▄▖▗▄▄▄▄▖▗▄▄▄▖
+▐▛▚▞▜▌▐▌   ▐▛▚▞▜▌▐▌ ▐▌  █     ▗▞▘▐▌   
+▐▌  ▐▌▐▛▀▀▘▐▌  ▐▌▐▌ ▐▌  █   ▗▞▘  ▐▛▀▀▘
+▐▌  ▐▌▐▙▄▄▖▐▌  ▐▌▝▚▄▞▘▗▄█▄▖▐▙▄▄▄▖▐▙▄▄▖
 
-    def __init__(self, stdscr):
-        self.screen = stdscr
-        curses.start_color()
-        curses.init_pair(1, colors["red"], colors["black"])
+    """
+
+    def __init__(self):
+        self.console = Console()
         self.draw()
-        self.screen.getch()
 
     def draw(self):
-        self.screen.clear()
-        curses.curs_set(0)
-        h, w = self.screen.getmaxyx()
-        # art_height = len(self.HEADER)
-        art_width = max(len(line) for line in self.HEADER)
-        # start_y = (h // 2) - (art_height // 2)
-        start_x = (w // 2) - (art_width // 2)
-        for i, line in enumerate(self.HEADER):
-            try:
-                self.screen.addstr(
-                    1 + i, start_x, line, curses.color_pair(1) | curses.A_BOLD
-                )
-            except curses.error:
-                pass
-        self.screen.refresh()
+        self.console.clear()
+        width = self.console.width
+        for line in self.HEADER.splitlines():
+            self.console.print(f"[bold red]{line}[/bold red]")
+            time.sleep(0.05)
+        time.sleep(0.2)
 
 
 class Reminder:
     """
-    Remind each day for a daily question
+    Remind each to revise for a daily question
     """
 
     def __init__(self):
