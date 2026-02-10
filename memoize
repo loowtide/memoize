@@ -3,6 +3,7 @@
 import time
 from rich.panel import Panel
 from rich.console import Console
+from rich import print
 import csv
 import argparse
 from pathlib import Path
@@ -51,11 +52,55 @@ class Dashboard:
 
     def draw(self):
         self.console.clear()
-        width = self.console.width
         for line in self.HEADER.splitlines():
             self.console.print(f"[bold red]{line}[/bold red]")
             time.sleep(0.05)
         time.sleep(0.2)
+
+
+class Question:
+    """Questions csv"""
+
+    @classmethod
+    def get_solved(cls):
+        payload = {
+            "query": "query userProgressQuestionList($filters: UserProgressQuestionListInput) { userProgressQuestionList(filters: $filters) { totalNum questions { frontendId title  titleSlug questionStatus } } }",
+            "variables": {"filters": {"skip": 0, "limit": 1000}},
+        }
+        response = requests.post(
+            Setup.url, cookies=Setup.cookie, headers=Setup.headers, json=payload
+        )
+        data = response.json()
+        listing = data.get("data", {}).get("userProgressQuestionList", {})
+        questions = listing["questions"]
+        num = listing["totalNum"]
+        cls.__make_csv(num, questions)
+
+    @staticmethod
+    def __make_csv(num, question):
+        file_path = Setup.create_columns()
+        ids = set()
+        if os.path.exists(file_path):
+            with open(file_path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    ids.add(row["frontendId"])
+
+        if os.path.exists(file_path):
+            with open(file_path, "a", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, Setup.columns, extrasaction="ignore")
+                for record in question:
+                    if (
+                        record["questionStatus"] == "SOLVED"
+                        and record["frontendId"] not in ids
+                    ):
+                        row = record.copy()
+                        row["link"] = f"https://leetcode.com/{row['titleSlug']}"
+                        row["priority"] = num
+                        num -= 1
+                        row["notes"] = ""
+                        row["revised"] = False
+                        writer.writerow(row)
 
 
 class Reminder:
@@ -64,7 +109,7 @@ class Reminder:
     """
 
     def __init__(self):
-        pass
+        self.username = Setup.USERNAME
 
 
 class Notes:
@@ -72,102 +117,70 @@ class Notes:
     Adding notes to LeetCode questions
     """
 
-    @property
-    def username(self):
-        return Setup.USERNAME
-
     def __init__(self):
         self.id = None
         self.title = None
-        self.url = None
+        self.link = None
         self.notes = None
         self.priority = None
         self.revised = None
-        self.init_env()
 
-    def init_env(self):
-        self.LEETCODE_SESSION = Setup.LEETCODE_SESSION
-        self.csrftoken = Setup.csrftoken
-        env_path = Path(__file__).resolve().parent / ".env"
-        if env_path.exists():
-            load_dotenv(dotenv_path=env_path)
-            self.LEETCODE_SESSION = os.getenv("LEETCODE_SESSION")
-            self.csrftoken = os.getenv("csrftoken")
-        else:
-            session = getpass.getpass(
-                f"{Color.BOLD}{Color.GREEN}Enter LEETCODE_SESSION:{Color.END}\n"
-            )
-            token = getpass.getpass(
-                f"{Color.BOLD}{Color.GREEN}Enter csrftoken:{Color.END}\n"
-            )
-            with open(env_path, "w") as f:
-                f.write(f'LEETCODE_SESSION="{session}"\n')
-                f.write(f'csrftoken="{token}"\n')
-            self.LEETCODE_SESSION = session
-            self.csrftoken = token
-
-    def get_recent_ac(self):
+    def add_notes_last(self):
+        """
         try:
             payload = {
-                "query": "query recentAcSubmissions($username: String!, $limit: Int!) { recentAcSubmissionList(username: $username, limit: $limit) { id title titleSlug timestamp } }",
-                "variables": {"username": self.username, "limit": 1},
+                "query": "query recentAcSubmissions($username: String!, $limit: Int!) { recentAcSubmissionList(username: $username, limit: $limit) {  title titleSlug timestamp } }",
+                "variables": {"username": Setup.USERNAME, "limit": 1},
             }
-            url = "https://leetcode.com/graphql"
-            cookie = {
-                "LEETCODE_SESSION": self.LEETCODE_SESSION,
-                "csrftoken": self.csrftoken,
-            }
-            headers = {
-                "Content-Type": "application/json",
-                "Referer": "https://leetcode.com",
-                "X-CSRFToken": self.csrftoken,
-            }
-            response = requests.post(url, cookies=cookie, headers=headers, json=payload)
+            response = requests.post(
+                Setup.url, cookies=Setup.cookie, headers=Setup.headers, json=payload
+            )
 
-            self.id = response.json()["data"]["recentAcSubmissionList"][0]["id"]
-            self.title = response.json()["data"]["recentAcSubmissionList"][0]["title"]
-            self.url = f"https://leetcode.com/{response.json()['data']['recentAcSubmissionList'][0]['titleSlug']}"
+            data = response.json()
+            submission = data.get("data", {}).get("recentAcSubmissionList", [])
+            self.title = submission[0]["title"]
+            self.link = f"https://leetcode.com/{submission[0]['titleSlug']}"
             self.notes = input(
                 f"{Color.BOLD}{Color.BLUE}Enter Notes for the question: {Color.END}{Color.BOLD}{Color.RED}{self.title}{Color.END}\n"
             )
-            timestamp = response.json()["data"]["recentAcSubmissionList"][0][
-                "timestamp"
-            ]
-            print(datetime.fromtimestamp(int(timestamp)).strftime("%c"))
+            timestamp = submission[0]["timestamp"]
         except Exception as e:
-            print(f"{Color.RED}unexpected error occured: {e} {Color.END}")
+            print(f"[bold red]Unexpected error occured: {e} [/bold red]")
+        """
+        Question().get_solved()
+        notes = input(f"{Color.GREEN}Enter notes{Color.END}")
+        rows = []
+        fieldnames = []
+        with open(Setup.csv_path, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        if rows:
+            rows[0]["notes"] = notes
+        with open(Setup.csv_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=Setup.columns)
+            writer.writerows(rows)
 
 
 class Setup:
     base_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = Path(os.path.join(base_dir, "leetnotes.csv"))
-    headers = ["ID", "Title", "Link", "Notes", "Priority", "Revised"]
+    columns = ["frontendId", "title", "link", "notes", "priority", "revised"]
 
     USERNAME = None
     LEETCODE_SESSION = None
     csrftoken = None
+    url = None
+    cookie = None
+    headers = None
 
-    @classmethod
-    def create_header(cls):
-        if not cls.csv_path.exists():
-            with open(cls.csv_path, "w", newline="", encoding="utf-8") as f:
-                writer = csv.writer(f)
-                writer.writerow(cls.headers)
-                return True
-        return False
-
-    @classmethod
-    def get_username(cls):
-        if not cls.USERNAME:
-            cls.USERNAME = input("Enter username:\n")
-
-    @classmethod
-    def init_env(cls):
+    def __init__(self):
         env_path = Path(__file__).resolve().parent / ".env"
         if env_path.exists():
             load_dotenv(dotenv_path=env_path)
-            cls.LEETCODE_SESSION = os.getenv("LEETCODE_SESSION")
-            cls.csrftoken = os.getenv("csrftoken")
+            Setup.LEETCODE_SESSION = os.getenv("LEETCODE_SESSION")
+            Setup.csrftoken = os.getenv("csrftoken")
+            Setup.USERNAME = os.getenv("USERNAME")
         else:
             session = getpass.getpass(
                 f"{Color.BOLD}{Color.GREEN}Enter LEETCODE_SESSION:{Color.END}\n"
@@ -175,12 +188,38 @@ class Setup:
             token = getpass.getpass(
                 f"{Color.BOLD}{Color.GREEN}Enter csrftoken:{Color.END}\n"
             )
+            username = input(f"{Color.BLUE}Enter username:\n{Color.END}")
             with open(env_path, "w") as f:
                 f.write(f'LEETCODE_SESSION="{session}"\n')
                 f.write(f'csrftoken="{token}"\n')
-            cls.LEETCODE_SESSION = session
-            cls.csrftoken = token
+                f.write(f'USERNAME="{username}"\n')
+            Setup.LEETCODE_SESSION = session
+            Setup.csrftoken = token
+            Setup.USERNAME = username
+
+    @classmethod
+    def make_request(cls):
+        cls.url = "https://leetcode.com/graphql"
+        cls.cookie = {
+            "LEETCODE_SESSION": Setup.LEETCODE_SESSION,
+            "csrftoken": Setup.csrftoken,
+        }
+        cls.headers = {
+            "Content-Type": "application/json",
+            "Referer": "https://leetcode.com",
+            "X-CSRFToken": Setup.csrftoken,
+        }
+
+    @classmethod
+    def create_columns(cls):
+        if not cls.csv_path.exists():
+            with open(cls.csv_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(cls.columns)
+        return cls.csv_path
 
 
 if __name__ == "__main__":
-    pass
+    a = Setup()
+    a.make_request()
+    Notes().add_notes_last()

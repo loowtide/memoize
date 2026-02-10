@@ -1,0 +1,85 @@
+3834,Merge Adjacent Equal Elements,https://leetcode.com/merge-adjacent-equal-elements,aslfhaf,89,False
+2130,Maximum Twin Sum of a Linked List,https://leetcode.com/maximum-twin-sum-of-a-linked-list,,88,False
+779,K-th Symbol in Grammar,https://leetcode.com/k-th-symbol-in-grammar,,87,False
+41,First Missing Positive,https://leetcode.com/first-missing-positive,,86,False
+122,Best Time to Buy and Sell Stock II,https://leetcode.com/best-time-to-buy-and-sell-stock-ii,,85,False
+209,Minimum Size Subarray Sum,https://leetcode.com/minimum-size-subarray-sum,,84,False
+3818,Minimum Prefix Removal to Make Array Strictly Increasing,https://leetcode.com/minimum-prefix-removal-to-make-array-strictly-increasing,,83,False
+50,"Pow(x, n)",https://leetcode.com/powx-n,,82,False
+74,Search a 2D Matrix,https://leetcode.com/search-a-2d-matrix,,81,False
+78,Subsets,https://leetcode.com/subsets,,80,False
+152,Maximum Product Subarray,https://leetcode.com/maximum-product-subarray,,79,False
+2,Add Two Numbers,https://leetcode.com/add-two-numbers,,78,False
+141,Linked List Cycle,https://leetcode.com/linked-list-cycle,,77,False
+189,Rotate Array,https://leetcode.com/rotate-array,,76,False
+746,Min Cost Climbing Stairs,https://leetcode.com/min-cost-climbing-stairs,,75,False
+416,Partition Equal Subset Sum,https://leetcode.com/partition-equal-subset-sum,,74,False
+3634,Minimum Removals to Balance Array,https://leetcode.com/minimum-removals-to-balance-array,,73,False
+3,Longest Substring Without Repeating Characters,https://leetcode.com/longest-substring-without-repeating-characters,,72,False
+973,K Closest Points to Origin,https://leetcode.com/k-closest-points-to-origin,,71,False
+70,Climbing Stairs,https://leetcode.com/climbing-stairs,,70,False
+1137,N-th Tribonacci Number,https://leetcode.com/n-th-tribonacci-number,,69,False
+374,Guess Number Higher or Lower,https://leetcode.com/guess-number-higher-or-lower,,68,False
+19,Remove Nth Node From End of List,https://leetcode.com/remove-nth-node-from-end-of-list,,67,False
+143,Reorder List,https://leetcode.com/reorder-list,,66,False
+377,Combination Sum IV,https://leetcode.com/combination-sum-iv,,65,False
+198,House Robber,https://leetcode.com/house-robber,,64,False
+983,Minimum Cost For Tickets,https://leetcode.com/minimum-cost-for-tickets,,63,False
+322,Coin Change,https://leetcode.com/coin-change,,62,False
+11,Container With Most Water,https://leetcode.com/container-with-most-water,,61,False
+875,Koko Eating Bananas,https://leetcode.com/koko-eating-bananas,,60,False
+1161,Maximum Level Sum of a Binary Tree,https://leetcode.com/maximum-level-sum-of-a-binary-tree,,59,False
+175,Combine Two Tables,https://leetcode.com/combine-two-tables,,58,False
+2483,Minimum Penalty for a Shop,https://leetcode.com/minimum-penalty-for-a-shop,,57,False
+739,Daily Temperatures,https://leetcode.com/daily-temperatures,,56,False
+2270,Number of Ways to Split Array,https://leetcode.com/number-of-ways-to-split-array,,55,False
+187,Repeated DNA Sequences,https://leetcode.com/repeated-dna-sequences,,54,False
+2348,Number of Zero-Filled Subarrays,https://leetcode.com/number-of-zero-filled-subarrays,,53,False
+179,Largest Number,https://leetcode.com/largest-number,,52,False
+238,Product of Array Except Self,https://leetcode.com/product-of-array-except-self,,51,False
+53,Maximum Subarray,https://leetcode.com/maximum-subarray,,50,False
+389,Find the Difference,https://leetcode.com/find-the-difference,,49,False
+231,Power of Two,https://leetcode.com/power-of-two,,48,False
+268,Missing Number,https://leetcode.com/missing-number,,47,False
+15,3Sum,https://leetcode.com/3sum,,46,False
+338,Counting Bits,https://leetcode.com/counting-bits,,45,False
+136,Single Number,https://leetcode.com/single-number,,44,False
+191,Number of 1 Bits,https://leetcode.com/number-of-1-bits,,43,False
+69,Sqrt(x),https://leetcode.com/sqrtx,,42,False
+35,Search Insert Position,https://leetcode.com/search-insert-position,,41,False
+704,Binary Search,https://leetcode.com/binary-search,,40,False
+206,Reverse Linked List,https://leetcode.com/reverse-linked-list,,39,False
+128,Longest Consecutive Sequence,https://leetcode.com/longest-consecutive-sequence,,38,False
+347,Top K Frequent Elements,https://leetcode.com/top-k-frequent-elements,,37,False
+682,Baseball Game,https://leetcode.com/baseball-game,,36,False
+121,Best Time to Buy and Sell Stock,https://leetcode.com/best-time-to-buy-and-sell-stock,,35,False
+219,Contains Duplicate II,https://leetcode.com/contains-duplicate-ii,,34,False
+26,Remove Duplicates from Sorted Array,https://leetcode.com/remove-duplicates-from-sorted-array,,33,False
+88,Merge Sorted Array,https://leetcode.com/merge-sorted-array,,32,False
+680,Valid Palindrome II,https://leetcode.com/valid-palindrome-ii,,31,False
+1768,Merge Strings Alternately,https://leetcode.com/merge-strings-alternately,,30,False
+912,Sort an Array,https://leetcode.com/sort-an-array,,29,False
+75,Sort Colors,https://leetcode.com/sort-colors,,28,False
+977,Squares of a Sorted Array,https://leetcode.com/squares-of-a-sorted-array,,27,False
+169,Majority Element,https://leetcode.com/majority-element,,26,False
+14,Longest Common Prefix,https://leetcode.com/longest-common-prefix,,25,False
+27,Remove Element,https://leetcode.com/remove-element,,24,False
+49,Group Anagrams,https://leetcode.com/group-anagrams,,23,False
+1408,String Matching in an Array,https://leetcode.com/string-matching-in-an-array,,22,False
+485,Max Consecutive Ones,https://leetcode.com/max-consecutive-ones,,21,False
+1,Two Sum,https://leetcode.com/two-sum,,20,False
+2678,Number of Senior Citizens,https://leetcode.com/number-of-senior-citizens,,19,False
+58,Length of Last Word,https://leetcode.com/length-of-last-word,,18,False
+2486,Append Characters to String to Make Subsequence,https://leetcode.com/append-characters-to-string-to-make-subsequence,,17,False
+392,Is Subsequence,https://leetcode.com/is-subsequence,,16,False
+344,Reverse String,https://leetcode.com/reverse-string,,15,False
+125,Valid Palindrome,https://leetcode.com/valid-palindrome,,14,False
+1299,Replace Elements with Greatest Element on Right Side,https://leetcode.com/replace-elements-with-greatest-element-on-right-side,,13,False
+242,Valid Anagram,https://leetcode.com/valid-anagram,,12,False
+1929,Concatenation of Array,https://leetcode.com/concatenation-of-array,,11,False
+3110,Score of a String,https://leetcode.com/score-of-a-string,,10,False
+2109,Adding Spaces to a String,https://leetcode.com/adding-spaces-to-a-string,,9,False
+217,Contains Duplicate,https://leetcode.com/contains-duplicate,,8,False
+167,Two Sum II - Input Array Is Sorted,https://leetcode.com/two-sum-ii-input-array-is-sorted,,7,False
+2176,Count Equal and Divisible Pairs in an Array,https://leetcode.com/count-equal-and-divisible-pairs-in-an-array,,6,False
+2006,Count Number of Pairs With Absolute Difference K,https://leetcode.com/count-number-of-pairs-with-absolute-difference-k,,5,False
