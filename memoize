@@ -1,13 +1,16 @@
 #! /usr/bin/env python3
 
 import time
+from rich.progress import Progress, BarColumn, TaskProgressColumn
 import datetime
+from datetime import date
 from rich.table import Table
 from rich.columns import Columns
 from rich.panel import Panel
 from rich import print
 from rich.text import Text
 from rich import box
+from rich.rule import Rule
 from rich.console import Console
 import csv
 import argparse
@@ -44,31 +47,30 @@ class Dashboard:
 ▓▓ ▓▓▓▓ ▓▓ ▓▓▓▓▓   ▓▓ ▓▓▓▓ ▓▓ ▓▓    ▓▓ ▓▓   ▓▓▓   ▓▓▓▓▓   
 ▓▓  ▓▓  ▓▓ ▓▓      ▓▓  ▓▓  ▓▓ ▓▓    ▓▓ ▓▓  ▓▓▓    ▓▓      
 ▓▓      ▓▓ ▓▓▓▓▓▓▓ ▓▓      ▓▓  ▓▓▓▓▓▓  ▓▓ ▓▓▓▓▓▓▓ ▓▓▓▓▓▓▓
-                                                         v1.0
     """
     totalNum = 0
     revised = 0
+    console = Console()
 
     def __init__(self):
-        self.console = Console()
-        self.file_path = Setup.profile_path
         self.console.clear()
-        self.draw_header()
-        self.make_profile()
-        self.count_revised()
-        self.print_profile()
-        self.count_revised()
+        self.file_path = Setup.profile_path
 
-    def draw_header(self):
-        for line in self.HEADER.splitlines():
-            self.console.print(f"[bold  red]{line}[/bold  red]")
+    @classmethod
+    def draw_header(cls):
+        for line in cls.HEADER.splitlines():
+            cls.console.print(f"[bold  red]{line}[/bold  red]")
             time.sleep(0.05)
         time.sleep(0.2)
+        cls.console.print(Rule("v0.1.0", style="bold magenta", characters="━"))
+        cls.count_revised()
+        cls.print_profile()
 
-    def make_profile(self):
-        Setup()
+    @classmethod
+    def make_profile(cls):
         if not Setup.profile_path.exists():
-            query = """
+            with cls.console.status("Fetching...", spinner="arc"):
+                query = """
                         query getUserData($username: String!) {
                         profile: matchedUser(username: $username) {
                         username
@@ -104,38 +106,41 @@ class Dashboard:
             data = response.json().get("data", {})
             with open(Setup.profile_path, "w") as f:
                 json.dump(data, f, indent=4)
+            with open(Setup.profile_path, "r") as f:
+                data = json.load(f)
 
     @classmethod
     def count_revised(cls):
+        cls.totalNum = 0
+        cls.revised = 0
         try:
             with open(Setup.csv_path, "r") as f:
                 reader = csv.DictReader(f)
-                next(reader)
                 for row in reader:
                     cls.totalNum += 1
                     if row["revised"] == "Yes":
                         cls.revised += 1
-            print(cls.revised)
         except FileNotFoundError as e:
             print(f"[bold red]File not found: {e}[/bold red]")
 
-    def print_profile(self):
-        with open(self.file_path, "r") as f:
+    @classmethod
+    def print_profile(cls):
+        with open(Setup.profile_path, "r") as f:
             data = json.load(f)
             profile_info = data["profile"]
 
         try:
-            mtime = os.path.getmtime(self.file_path)
+            mtime = os.path.getmtime(Setup.profile_path)
             last_updated = datetime.datetime.fromtimestamp(mtime).strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
 
-            with open(self.file_path, "r") as f:
+            with open(Setup.profile_path, "r") as f:
                 data = json.load(f)
 
         except FileNotFoundError:
-            self.console.print(
-                f"[bold red]Error:[/] File '{self.file_path}' not found."
+            cls.console.print(
+                f"[bold red]Error:[/] File '{Setup.profile_path}' not found."
             )
             return
 
@@ -145,7 +150,7 @@ class Dashboard:
             ("| Ranking: ", "bold white"),
             (f"{profile_info['profile']['ranking']:,}", "bold yellow"),
         )
-        self.console.print(Panel.fit(header_text, style="blue"))
+        cls.console.print(Panel.fit(header_text, style="blue"))
 
         lang_table = Table(title="Languages Used", border_style="magenta")
         lang_table.add_column("Language", style="cyan")
@@ -176,30 +181,41 @@ class Dashboard:
             )
             stats_table.add_row(f"[{color}]{diff}[/]", count, percentage)
 
-        revised_table = Table(title="Revised Questions", border_style="magenta")
-        revised_table.add_column("Total", style="bold")
-        revised_table.add_column("Revised", justify="right")
-        revised_table.add_row(str(self.totalNum), str(self.revised))
-
-        self.console.print(
-            Columns([lang_table, stats_table, revised_table], equal=True)
+        mini_progress = Progress(
+            BarColumn(bar_width=20),
+            TaskProgressColumn(),
         )
+        mini_progress.add_task("", total=cls.totalNum, completed=cls.revised)
+        revised_table = Table(title="Revised Questions", border_style="magenta")
+        revised_table.add_column("Metric", style="bold")
+        revised_table.add_column("Value", justify="right")
+        revised_table.add_column("Visual Progress")
+        revised_table.add_row(
+            "Overall Mastery", f"{cls.revised}/{cls.totalNum}", mini_progress
+        )
+        #       revised_table.add_row(str(self.totalNum), str(self.revised))
+
+        cls.console.print(Columns([lang_table, stats_table, revised_table], equal=True))
 
         footer_text = Text(
-            f"Data Source: {self.file_path} | Last Updated: {last_updated}",
+            f"Data Source: {Setup.profile_path} | Last Updated: {last_updated}",
             style="dim italic white",
         )
-        self.console.print(Panel.fit(footer_text, border_style="dim"))
+        Daily.get_question()
+        cls.console.print(Panel.fit(footer_text, border_style="dim"))
 
 
 class Questions:
     """Questions csv"""
 
+    def __init__(self):
+        self.get_solved()
+
     @classmethod
     def get_solved(cls):
         payload = {
             "query": "query userProgressQuestionList($filters: UserProgressQuestionListInput) { userProgressQuestionList(filters: $filters) { totalNum questions { frontendId title  titleSlug questionStatus } } }",
-            "variables": {"filters": {"skip": 0, "limit": 1000}},
+            "variables": {"filters": {"skip": 0, "limit": 4000}},
         }
         response = requests.post(
             Setup.url, cookies=Setup.cookie, headers=Setup.headers, json=payload
@@ -207,7 +223,7 @@ class Questions:
         data = response.json()
         listing = data.get("data", {}).get("userProgressQuestionList", {})
         questions = listing["questions"]
-        num = Setup.num
+        num = listing["totalNum"]
         cls.__make_csv(num, questions)
 
     @staticmethod
@@ -218,7 +234,7 @@ class Questions:
             with open(file_path, "r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    ids.add(row.get("frontendId"))
+                    ids.add(str(row.get("frontendId")))
 
         if os.path.exists(file_path):
             with open(file_path, "a", newline="", encoding="utf-8") as f:
@@ -226,7 +242,7 @@ class Questions:
                 for record in question:
                     if (
                         record["questionStatus"] == "SOLVED"
-                        and record["frontendId"] not in ids
+                        and str(record["frontendId"]) not in ids
                     ):
                         row = record.copy()
                         row["link"] = f"https://leetcode.com/{row['titleSlug']}"
@@ -237,16 +253,20 @@ class Questions:
                         writer.writerow(row)
 
 
-class Reminder:
+class Daily:
     """
     Remind each to revise for a daily question
     """
 
-    def __init__(self):
-        self.__get_question()
+    done = "n"
 
-    @staticmethod
-    def __get_question():
+    def __init__(self, done="n"):
+        Daily.done = "y" if done == "y" else "n"
+        Dashboard.make_profile()
+        self.get_question()
+
+    @classmethod
+    def get_question(cls):
         rows = []
         with open(Setup.csv_path, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
@@ -258,21 +278,60 @@ class Reminder:
         min_row = min(target_rows, key=lambda x: int(x.get("priority")))
         title = min_row["title"]
         link = min_row["link"]
-        min_row["revised"] = "Yes"
-        min_row["priority"] = str(int(min_row["priority"]) + 1)
+        notes = min_row["notes"]
+        today_str = str(date.today())
+
+        if not Setup.profile_path.exists():
+            data = {
+                "daily": {
+                    "title": title,
+                    "link": link,
+                    "notes": notes,
+                    "date": today_str,
+                }
+            }
+        else:
+            with open(Setup.profile_path, "r") as f:
+                data = json.load(f)
+
+            curr = data.get("daily", {})
+            if curr.get("date") != today_str:
+                data["daily"] = {
+                    "title": title,
+                    "link": link,
+                    "notes": notes,
+                    "date": today_str,
+                }
+            else:
+                title = curr.get("title")
+                link = curr.get("link")
+                notes = curr.get("notes")
+
+        with open(Setup.profile_path, "w") as f:
+            json.dump(data, f, indent=4)
+
+        if cls.done == "y":
+            min_row["revised"] = "Yes"
+            priority = int(min_row["priority"])
+            min_row["priority"] = str(priority + 1)
+            with open(Setup.csv_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=Setup.columns)
+                writer.writeheader()
+                writer.writerows(rows)
+
+        content = (
+            Text("Title: ", style="bold yellow")
+            + Text(f"{title}\n", style="green")
+            + Text("Link:  ", style="bold orange3")
+            + Text(f"{link}\n", style="underline blue")
+            + Text("Notes: ", style="bold red")
+            + Text(f"{notes}", style="white")
+        )
         print(
             Panel.fit(
-                Text("Today's Question:\n")
-                + Text(f"Title: {title}\n", style="green")
-                + Text(f"Link:{link}", style="purple"),
-                style="bold red",
-                box=box.SQUARE,
+                content, title="Today's Question", box=box.HEAVY, border_style="#c4a7e7"
             )
         )
-        with open(Setup.csv_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, Setup.columns)
-            writer.writeheader()
-            writer.writerows(rows)
 
 
 class Notes:
@@ -285,13 +344,13 @@ class Notes:
         self.add_notes_last()
 
     def add_notes_last(self):
-        notes = input(f"{Color.GREEN}Enter notes{Color.END}")
+        console = Console()
         rows = []
-        fieldnames = []
         with open(Setup.csv_path, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             rows = list(reader)
-
+        console.print(f"[bold purple]{rows[0]['title']}[/bold purple]")
+        notes = console.input("[green]Enter notes[/green]\n")
         if rows:
             rows[0]["notes"] = notes
         with open(Setup.csv_path, "w", newline="", encoding="utf-8") as f:
@@ -318,6 +377,7 @@ class Setup:
         self.init_env()
         self.make_request()
         self.create_columns()
+        Dashboard.make_profile()
 
     @classmethod
     def make_request(cls):
@@ -366,15 +426,22 @@ class Setup:
 
 
 def main():
+    Setup()
+    Questions()
     parser = argparse.ArgumentParser(add_help=True)
     subparser = parser.add_subparsers(dest="command")
     subparser.add_parser("dashboard", help="Open Dashboard")
     subparser.add_parser("note", help="Open last accepted question for notes")
+    parser.add_argument("-t", "--today", nargs="?", const="n", default=None)
     parser.add_argument("-d", "--dashboard", action="store_true")
     parser.add_argument("-n", "--note", action="store_true")
     args = parser.parse_args()
-    if any([args.command == "dahboard", args.dashboard]):
-        Dashboard()
+    if any([args.command == "dashboard", args.dashboard]):
+        Dashboard.draw_header()
+    if args.today is not None:
+        Daily(args.today)
+    elif args.note:
+        Notes().add_notes_last()
 
 
 if __name__ == "__main__":
