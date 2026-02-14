@@ -68,9 +68,8 @@ class Dashboard:
 
     @classmethod
     def make_profile(cls):
-        if not Setup.profile_path.exists():
-            with cls.console.status("Fetching...", spinner="arc"):
-                query = """
+        with cls.console.status("Fetching...", spinner="arc"):
+            query = """
                         query getUserData($username: String!) {
                         profile: matchedUser(username: $username) {
                         username
@@ -99,15 +98,15 @@ class Dashboard:
                                 }
                     }
                    """
-            payload = {"query": query, "variables": {"username": Setup.USERNAME}}
-            response = requests.post(
-                Setup.url, cookies=Setup.cookie, headers=Setup.headers, json=payload
-            )
-            data = response.json().get("data", {})
-            with open(Setup.profile_path, "w") as f:
-                json.dump(data, f, indent=4)
-            with open(Setup.profile_path, "r") as f:
-                data = json.load(f)
+        payload = {"query": query, "variables": {"username": Setup.USERNAME}}
+        response = requests.post(
+            Setup.url, cookies=Setup.cookie, headers=Setup.headers, json=payload
+        )
+        data = response.json().get("data", {})
+        with open(Setup.profile_path, "w") as f:
+            json.dump(data, f, indent=4)
+        with open(Setup.profile_path, "r") as f:
+            data = json.load(f)
 
     @classmethod
     def count_revised(cls):
