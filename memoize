@@ -228,28 +228,18 @@ class Questions:
     @staticmethod
     def __make_csv(num, question):
         file_path = Setup.create_columns()
-        ids = set()
-        if os.path.exists(file_path):
-            with open(file_path, "r", encoding="utf-8") as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    ids.add(str(row.get("frontendId")))
-
-        if os.path.exists(file_path):
-            with open(file_path, "a", newline="", encoding="utf-8") as f:
-                writer = csv.DictWriter(f, Setup.columns, extrasaction="ignore")
-                for record in question:
-                    if (
-                        record["questionStatus"] == "SOLVED"
-                        and str(record["frontendId"]) not in ids
-                    ):
-                        row = record.copy()
-                        row["link"] = f"https://leetcode.com/{row['titleSlug']}"
-                        row["priority"] = str(num)
-                        num -= 1
-                        row["notes"] = ""
-                        row["revised"] = "No"
-                        writer.writerow(row)
+        with open(file_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, Setup.columns, extrasaction="ignore")
+            writer.writeheader()
+            for record in question:
+                if record.get("questionStatus") == "SOLVED":
+                    row = record.copy()
+                    row["link"] = f"https://leetcode.com/{row['titleSlug']}"
+                    row["priority"] = str(num)
+                    num -= 1
+                    row["notes"] = ""
+                    row["revised"] = "No"
+                    writer.writerow(row)
 
 
 class Daily:
@@ -440,7 +430,7 @@ def main():
     if args.today is not None:
         Daily(args.today)
     elif args.note:
-        Notes().add_notes_last()
+        Notes()
 
 
 if __name__ == "__main__":
